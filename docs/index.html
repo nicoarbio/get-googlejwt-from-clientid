@@ -21,6 +21,8 @@
     <h5>By: <a href="https://github.com/nicoarbio">github/nicoarbio</a></h5>
     <h6>Frontend design is my passion✨(?</h6>
     <hr>
+    <input type="checkbox" name="clearLogCheckbox" id="clearLog">
+    <label for="clearLogCheckbox">Clear login info after new successful login (new ones appear on the top)</label>
     <p>Client ID: <input id="clientId" type="text"></p>
     <button id="initializeGoogleLogin" type="button" onclick="initializeGoogleLogin()">Initialize Google Login with Google Client ID</button>
     <br>
@@ -28,8 +30,8 @@
     <div id="GOOGLE_LOGIN"></div>
 
     <script>
-        // Setting defaultClientID might be useful. Check readme tail.
-        const defaultClientId = null;
+        const defaultClientId = new URLSearchParams(document.location.search).get("clientId");
+        let clientId;
         const loadDefaultClientId = () => {
             if(defaultClientId != null) {
                 document.getElementById("clientId").value = defaultClientId;
@@ -37,7 +39,7 @@
             }
         }
         const initializeGoogleLogin = () => {
-            const clientId = document.getElementById("clientId").value;
+            clientId = document.getElementById("clientId").value;
             google.accounts.id.initialize({
                 client_id: clientId,
                 callback: onSuccessLogin
@@ -47,10 +49,13 @@
                 googleButtonConfiguration
             );
             google.accounts.id.prompt();
+            window.history.pushState(null, document.title, '?clientId='+clientId);
         }
 
         const onSuccessLogin = (res) => {
-            if(document.getElementById("loginInfo")) document.getElementById("loginInfo").remove();
+            while (document.getElementById("clearLog").checked && document.getElementById("loginInfo")) {
+                document.getElementById("loginInfo").remove();
+            }
 
             const decodedJWT = parseJwt(res.credential);
             const JWT = res.credential;
@@ -91,8 +96,16 @@
             DIVloginInfo.appendChild(IMGgooglePic);
             DIVloginInfo.appendChild(PREdecodedJWT_title);
             DIVloginInfo.appendChild(PREdecodedJWT);
-
-            document.body.appendChild(DIVloginInfo);
+            
+            let firstDiv = document.getElementById("loginInfo")
+            if (firstDiv) {
+                document.body.insertBefore(DIVloginInfo, firstDiv)
+                const hrSeparator = document.createElement("hr");
+                hrSeparator.setAttribute("id", "loginInfo")
+                document.body.insertBefore(hrSeparator, firstDiv)
+            } else {
+                document.body.appendChild(DIVloginInfo);
+            }
         }
 
         const googleButtonConfiguration = {
